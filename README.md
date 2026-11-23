@@ -12,3 +12,8 @@
 - The Luckfox stock rootfs already has wpa_supplicant 2.6 (nl80211), wpa_cli, udhcpc, ifconfig, ip. Board reachable via USB RNDIS: host 172.32.0.100, `ssh root@172.32.0.93`. Boot partition is 4 MB. SPI0 (spi@ff500000) is disabled in the stock DT and uses spi0m0 pins (CS PC0, CLK PC1, MOSI PC2, MISO PC3) which match the DTS; spi2.0 is the on-board SPI NAND.
 - Bring-up status (2026-11-23): WORKING up to scan. SPI mode 3 on both sides (firmware `g_spi_mode`, DTS `spi-cpha`); host driver clears bit 7 of RX byte 0 (first MISO bit reads 1; workaround, see patches/). Use the SDK-built `cfg80211.ko` (stock /oem one Oopses). Reset the ESP via USB/serial RTS after loading the driver (no reset wire). Scan found a 2.4 GHz network; not yet associated (needs credentials).
 - Apply `patches/esp-hosted-linux.patch` to esp-hosted-linux (it includes the Makefile hook, SPI mode 3 firmware change, first-bit workaround; `esp_luckfox_compat.c` is in patches/ and goes in host/).
+
+## Auto-start at boot
+- `/oem/usr/ko/cfg80211.ko` replaced by the SDK build (stock kept as `cfg80211.ko.stock`); `esp32_spi.ko` copied to `/oem/usr/ko/`.
+- `bundle/S98esp32wifi` → `/etc/init.d/`: loads the modules, waits for `wlan0`, runs `wpa_supplicant -c /etc/wpa_supplicant.conf` and `udhcpc`. Log: `/tmp/esp32wifi.log`.
+- Requires the reset wire (Luckfox pin 12 / GPIO1_D0 → ESP32 EN). Without it, the ESP32 boot event is missed and the driver gives up after 3 reset attempts.
