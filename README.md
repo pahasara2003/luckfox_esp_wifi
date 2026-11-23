@@ -16,7 +16,7 @@
 ## Auto-start at boot
 - `/oem/usr/ko/cfg80211.ko` replaced by the SDK build (stock kept as `cfg80211.ko.stock`); `esp32_spi.ko` copied to `/oem/usr/ko/`.
 - `bundle/S98esp32wifi` → `/etc/init.d/`: loads the modules, waits for `wlan0`, runs `wpa_supplicant -c /etc/wpa_supplicant.conf` and `udhcpc`. Log: `/tmp/esp32wifi.log`.
-- Reset: Luckfox pin 12 (GPIO1_D0) → ESP32-C3 GPIO1. Patched firmware restarts after a low pulse on GPIO1 (SuperMini has no EN on the header).
+- Reset: Luckfox pin 12 (GPIO1_D0) → ESP32-C3 GPIO1. Patched firmware latches the host's ~0.3 ms low pulse with a GPIO interrupt and restarts when the line goes high (SuperMini has no EN on the header). Polling missed the pulse.
 - Wi-Fi network goes in `/etc/wpa_supplicant.conf` (chmod 600).
 
 ## Slimmed boot

@@ -1,5 +1,5 @@
 diff --git a/esp/esp_driver/network_adapter/main/app_main.c b/esp/esp_driver/network_adapter/main/app_main.c
-index f656dc3..21bac1d 100644
+index f656dc3..76165d1 100644
 --- a/esp/esp_driver/network_adapter/main/app_main.c
 +++ b/esp/esp_driver/network_adapter/main/app_main.c
 @@ -19,6 +19,8 @@
@@ -11,22 +11,28 @@ index f656dc3..21bac1d 100644
  #include "esp_heap_caps.h"
  #include "sys/queue.h"
  #include "soc/soc.h"
-@@ -1864,8 +1866,25 @@ static void set_gpio_cd_pin(void)
+@@ -1864,8 +1866,31 @@ static void set_gpio_cd_pin(void)
  #endif
  }
  
 +/* Luckfox: SuperMini has no EN on the header, so the host reset line goes to GPIO1.
-+ * Restart after a low pulse ends (restarting while still low would loop). */
++ * The host pulse is only ~0.3 ms, so latch the falling edge in an ISR and
++ * restart once the line is high again (restarting while low would loop). */
 +#define HOST_RESET_GPIO 1
++static volatile bool host_reset_seen;
++static void IRAM_ATTR host_reset_isr(void *arg) { host_reset_seen = true; }
 +static void host_reset_task(void *arg)
 +{
-+	gpio_config_t c = { .pin_bit_mask = 1ULL << HOST_RESET_GPIO, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE };
++	gpio_config_t c = { .pin_bit_mask = 1ULL << HOST_RESET_GPIO, .mode = GPIO_MODE_INPUT,
++		.pull_up_en = GPIO_PULLUP_ENABLE, .intr_type = GPIO_INTR_NEGEDGE };
 +	gpio_config(&c);
-+	bool seen_low = false;
++	gpio_install_isr_service(0);
++	gpio_isr_handler_add(HOST_RESET_GPIO, host_reset_isr, NULL);
 +	for (;;) {
-+		int v = gpio_get_level(HOST_RESET_GPIO);
-+		if (!v) seen_low = true;
-+		else if (seen_low) esp_restart();
++		if (!gpio_get_level(HOST_RESET_GPIO))
++			host_reset_seen = true;
++		else if (host_reset_seen)
++			esp_restart();
 +		vTaskDelay(pdMS_TO_TICKS(5));
 +	}
 +}
