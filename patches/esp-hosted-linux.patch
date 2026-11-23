@@ -154,7 +154,7 @@ index 0000000..19cd543
 +
 +#endif /* !CONFIG_BT */
 diff --git a/host/spi/esp_spi.c b/host/spi/esp_spi.c
-index 9b3bd86..fa292de 100644
+index 9b3bd86..44788b6 100644
 --- a/host/spi/esp_spi.c
 +++ b/host/spi/esp_spi.c
 @@ -1166,6 +1166,9 @@ static int process_rx_buf(struct sk_buff *skb, bool rx_pending)
@@ -167,3 +167,24 @@ index 9b3bd86..fa292de 100644
  	header = (struct esp_payload_header *)skb->data;
  	if (spi_is_dummy_rx(header) ||
  	    spi_is_unadvertised_idle_rx(skb, rx_pending))
+@@ -1851,6 +1854,11 @@ static void spi_exit(void)
+ 	memset(&spi_context, 0, sizeof(spi_context));
+ }
+ 
++/* Luckfox: override the Device Tree clock cap for benchmarking (0 = use DT). */
++static uint spi_max_mhz;
++module_param(spi_max_mhz, uint, 0444);
++MODULE_PARM_DESC(spi_max_mhz, "Override DT spi-max-frequency cap in MHz (testing)");
++
+ static void adjust_spi_clock(u8 spi_clk_mhz)
+ {
+ 	u32 max_mhz;
+@@ -1858,7 +1866,7 @@ static void adjust_spi_clock(u8 spi_clk_mhz)
+ 	if (!spi_clk_mhz || !spi_context.esp_spi_dev)
+ 		return;
+ 
+-	max_mhz = spi_context.spi_max_hz / NUMBER_1M;
++	max_mhz = spi_max_mhz ? spi_max_mhz : spi_context.spi_max_hz / NUMBER_1M;
+ 	if (max_mhz && spi_clk_mhz > max_mhz) {
+ 		esp_warn("Requested SPI clock %u MHz exceeds Device Tree cap %u Hz; capping to %u MHz\n",
+ 			 spi_clk_mhz, spi_context.spi_max_hz, max_mhz);
