@@ -1,0 +1,111 @@
+diff --git a/esp/esp_driver/network_adapter/main/spi_slave_api.c b/esp/esp_driver/network_adapter/main/spi_slave_api.c
+index 57295d9..f129346 100644
+--- a/esp/esp_driver/network_adapter/main/spi_slave_api.c
++++ b/esp/esp_driver/network_adapter/main/spi_slave_api.c
+@@ -54,7 +54,7 @@ static const char TAG[] = "FW_SPI";
+ #define MAKE_SPI_DMA_ALIGNED(VAL)  (VAL += SPI_DMA_ALIGNMENT_BYTES - \
+                 ((VAL)& SPI_DMA_ALIGNMENT_MASK))
+ 
+-uint8_t g_spi_mode = SPI_MODE_2;
++uint8_t g_spi_mode = SPI_MODE_3;
+ 
+ /* Chipset specific configurations */
+ #ifdef CONFIG_IDF_TARGET_ESP32
+diff --git a/host/Makefile b/host/Makefile
+index a823c21..8b12b33 100644
+--- a/host/Makefile
++++ b/host/Makefile
+@@ -69,6 +69,11 @@ endif
+ module_objects += esp_bt.o esp_rcp.o main.o esp_cmd.o esp_utils.o esp_cfg80211.o esp_stats.o esp_debugfs.o esp_log.o
+ CFLAGS_esp_log.o = -DDEBUG
+ 
++# Rockchip/Luckfox 5.10 BSP kernel: namespaced VFS symbols, no CONFIG_BT.
++ifeq ($(LUCKFOX_COMPAT), y)
++    module_objects += esp_luckfox_compat.o
++endif
++
+ # Module build rules
+ obj-m := $(MODULE_NAME).o
+ $(MODULE_NAME)-y := $(module_objects)
+diff --git a/host/esp_luckfox_compat.c b/host/esp_luckfox_compat.c
+new file mode 100644
+index 0000000..19cd543
+--- /dev/null
++++ b/host/esp_luckfox_compat.c
+@@ -0,0 +1,62 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Build glue for the Rockchip/Luckfox 5.10 BSP kernel (RV1103/RV1106).
++ *
++ * 1. That kernel is Android-derived and exports filp_open()/kernel_read()
++ *    only inside a symbol namespace, which the OTA path of this driver uses.
++ * 2. The stock Luckfox kernel is built without CONFIG_BT, so the HCI core
++ *    symbols referenced by esp_bt.c do not exist. Wi-Fi does not need them:
++ *    Bluetooth is only started on request (radio_service=bt), so provide
++ *    stubs that make that request fail cleanly instead of failing the link.
++ */
++
++#include <linux/module.h>
++#include <linux/version.h>
++#include <linux/skbuff.h>
++#include <net/bluetooth/bluetooth.h>
++#include <net/bluetooth/hci_core.h>
++
++#ifdef MODULE_IMPORT_NS
++MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
++#endif
++
++#if !IS_ENABLED(CONFIG_BT)
++
++struct hci_dev *hci_alloc_dev(void)
++{
++	pr_warn("esp32: kernel built without CONFIG_BT, Bluetooth is unavailable\n");
++	return NULL;
++}
++
++void hci_free_dev(struct hci_dev *hdev)
++{
++}
++
++int hci_register_dev(struct hci_dev *hdev)
++{
++	return -EOPNOTSUPP;
++}
++
++void hci_unregister_dev(struct hci_dev *hdev)
++{
++}
++
++int hci_recv_frame(struct hci_dev *hdev, struct sk_buff *skb)
++{
++	kfree_skb(skb);
++	return -EOPNOTSUPP;
++}
++
++void bt_err(const char *format, ...)
++{
++	struct va_format vaf;
++	va_list args;
++
++	va_start(args, format);
++	vaf.fmt = format;
++	vaf.va = &args;
++	pr_err("esp32 bt: %pV", &vaf);
++	va_end(args);
++}
++
++#endif /* !CONFIG_BT */
+diff --git a/host/spi/esp_spi.c b/host/spi/esp_spi.c
+index 9b3bd86..fa292de 100644
+--- a/host/spi/esp_spi.c
++++ b/host/spi/esp_spi.c
+@@ -1166,6 +1166,9 @@ static int process_rx_buf(struct sk_buff *skb, bool rx_pending)
+ 
+ 	if (!skb)
+ 		return -EINVAL;
++	/* shortcut: Luckfox RV1103 + ESP32-C3 reads the first MISO bit of a transfer as 1;
++	 * if_num never exceeds 7 here, so clear it. Remove once the timing cause is fixed. */
++	skb->data[0] &= 0x7f;
+ 	header = (struct esp_payload_header *)skb->data;
+ 	if (spi_is_dummy_rx(header) ||
+ 	    spi_is_unadvertised_idle_rx(skb, rx_pending))

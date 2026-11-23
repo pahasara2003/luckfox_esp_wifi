@@ -35,7 +35,8 @@
 		 * never above this value. Lower it if jumper wires give errors.
 		 */
 		spi-max-frequency = <10000000>;
-		spi-cpol;			/* SPI mode 2 */
+		spi-cpol;
+		spi-cpha;			/* SPI mode 3 (mode 2 gave a 1-bit lag on MISO) */
 		pinctrl-names = "default";
 		pinctrl-0 = <&esp32_wifi_gpios>;
 		reset-gpios = <&gpio1 RK_PD0 GPIO_ACTIVE_LOW>;
