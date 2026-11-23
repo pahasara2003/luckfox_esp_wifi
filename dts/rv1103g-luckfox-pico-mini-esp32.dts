@@ -1,0 +1,59 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Luckfox Pico Mini (RV1103) + ESP32 as an SPI WiFi adapter (ESP-Hosted).
+ *
+ * Wiring (Luckfox header pin -> ESP32 classic default pin):
+ *   pin 6  GPIO1_C0 SPI0_CS0   -> IO15 (CS)      + 10k pull-up to 3V3
+ *   pin 7  GPIO1_C1 SPI0_CLK   -> IO14 (SCLK)
+ *   pin 8  GPIO1_C2 SPI0_MOSI  -> IO13 (MOSI)
+ *   pin 9  GPIO1_C3 SPI0_MISO  <- IO12 (MISO)
+ *   pin 10 GPIO1_C4            <- IO2  (Handshake)
+ *   pin 11 GPIO1_C5            <- IO4  (Data Ready)
+ *   pin 12 GPIO1_D0            -> EN   (Reset, active low)
+ *   pin 2  GND                 -- GND
+ */
+
+#include "rv1103g-luckfox-pico-mini.dts"
+
+/ {
+	model = "Luckfox Pico Mini (ESP32 SPI WiFi)";
+};
+
+&spi0 {
+	status = "okay";
+
+	/* CS0 now belongs to the ESP32; these stock nodes sit on the same CS. */
+	/delete-node/ spidev@0;
+	/delete-node/ fbtft@0;
+
+	esp32_wifi: wifi@0 {
+		compatible = "espressif,esp32-spi";
+		reg = <0>;
+		/*
+		 * Host-side ceiling. The driver boots at 1 MHz and then moves to
+		 * the rate the firmware advertises (10 MHz on a classic ESP32),
+		 * never above this value. Lower it if jumper wires give errors.
+		 */
+		spi-max-frequency = <10000000>;
+		spi-cpol;			/* SPI mode 2 */
+		pinctrl-names = "default";
+		pinctrl-0 = <&esp32_wifi_gpios>;
+		reset-gpios = <&gpio1 RK_PD0 GPIO_ACTIVE_LOW>;
+		handshake-gpios = <&gpio1 RK_PC4 GPIO_ACTIVE_HIGH>;
+		data-ready-gpios = <&gpio1 RK_PC5 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&pinctrl {
+	esp32-wifi {
+		esp32_wifi_gpios: esp32-wifi-gpios {
+			rockchip,pins =
+				/* Handshake / Data Ready: pulled down so they read
+				 * idle while the ESP32 is held in reset. */
+				<1 RK_PC4 RK_FUNC_GPIO &pcfg_pull_down>,
+				<1 RK_PC5 RK_FUNC_GPIO &pcfg_pull_down>,
+				/* EN has its own pull-up on the ESP32 board. */
+				<1 RK_PD0 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+};

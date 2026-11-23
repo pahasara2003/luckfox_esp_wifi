@@ -1,0 +1,5 @@
+esp-idf/
+.espressif/
+esp-hosted-linux/
+*.log
+*.img*
