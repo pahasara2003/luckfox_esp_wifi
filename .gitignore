@@ -3,3 +3,5 @@ esp-idf/
 esp-hosted-linux/
 *.log
 *.img*
+bundle/*
+!bundle/*.sh

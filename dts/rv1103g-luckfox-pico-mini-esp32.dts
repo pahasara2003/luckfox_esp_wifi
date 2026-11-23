@@ -2,14 +2,14 @@
 /*
  * Luckfox Pico Mini (RV1103) + ESP32 as an SPI WiFi adapter (ESP-Hosted).
  *
- * Wiring (Luckfox header pin -> ESP32 classic default pin):
- *   pin 6  GPIO1_C0 SPI0_CS0   -> IO15 (CS)      + 10k pull-up to 3V3
- *   pin 7  GPIO1_C1 SPI0_CLK   -> IO14 (SCLK)
- *   pin 8  GPIO1_C2 SPI0_MOSI  -> IO13 (MOSI)
- *   pin 9  GPIO1_C3 SPI0_MISO  <- IO12 (MISO)
- *   pin 10 GPIO1_C4            <- IO2  (Handshake)
+ * Wiring (Luckfox header pin -> ESP32-C3 default pin):
+ *   pin 6  GPIO1_C0 SPI0_CS0   -> IO10 (CS)      + 10k pull-up to 3V3
+ *   pin 7  GPIO1_C1 SPI0_CLK   -> IO6  (SCLK)
+ *   pin 8  GPIO1_C2 SPI0_MOSI  -> IO7  (MOSI)
+ *   pin 9  GPIO1_C3 SPI0_MISO  <- IO2  (MISO)
+ *   pin 10 GPIO1_C4            <- IO3  (Handshake)
  *   pin 11 GPIO1_C5            <- IO4  (Data Ready)
- *   pin 12 GPIO1_D0            -> EN   (Reset, active low)
+ *   pin 12 GPIO1_D0            -> RST/EN (Reset, active low; optional)
  *   pin 2  GND                 -- GND
  */
 
