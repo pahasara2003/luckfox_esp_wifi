@@ -21,3 +21,6 @@
 
 ## Slimmed boot
 `/oem/usr/ko/insmod_ko.sh` replaced by `bundle/insmod_ko.sh` (no-op; original kept on board as `insmod_ko.sh.stock`). Skips camera/ISP, NPU, video codec, audio, motor and stock-Wi-Fi (`rkwifi_server`, aic8800) modules. Result: 15.2 MB RAM available (was 11.5), load ~0.2 (was ~10), only `esp32_spi` + `cfg80211` loaded. `adbd` kept.
+
+## Power
+Power the ESP32-C3 SuperMini from Luckfox **VBUS (5V)** into the SuperMini **5V** pin. From the Luckfox 3V3 pin the ESP32 browns out when its radio starts: boot event arrives, then `cmd_init_interface` times out.

@@ -1,0 +1,18 @@
+#!/bin/sh
+# Auto-load ESP-Hosted SPI Wi-Fi and connect using /etc/wpa_supplicant.conf
+KO=/oem/usr/ko
+LOG=/tmp/esp32wifi.log
+run() {
+	lsmod | grep -q '^cfg80211' || insmod $KO/cfg80211.ko
+	lsmod | grep -q "^esp32_spi" || insmod $KO/esp32_spi.ko
+	i=0; while [ ! -e /sys/class/net/wlan0 ] && [ $i -lt 60 ]; do sleep 1; i=$((i+1)); done
+	[ -e /sys/class/net/wlan0 ] || { echo "no wlan0 (ESP32 boot event missed: reset ESP32)"; return 1; }
+	ifconfig wlan0 up
+	wpa_supplicant -B -i wlan0 -D nl80211 -c /etc/wpa_supplicant.conf
+	udhcpc -i wlan0 -b
+}
+case "$1" in
+	start) ( sleep 3; run ) >$LOG 2>&1 & ;;
+	stop) killall wpa_supplicant 2>/dev/null; rmmod esp32_spi 2>/dev/null ;;
+	*) exit 1 ;;
+esac
