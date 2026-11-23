@@ -24,3 +24,6 @@
 
 ## Power
 Power the ESP32-C3 SuperMini from Luckfox **VBUS (5V)** into the SuperMini **5V** pin. From the Luckfox 3V3 pin the ESP32 browns out when its radio starts: boot event arrives, then `cmd_init_interface` times out.
+
+## Reachability
+Firmware forces `WIFI_PS_NONE` even when the host asks for power save: in modem sleep the ESP32 missed broadcast ARP requests, so the board was unreachable over Wi-Fi until it sent traffic itself.

@@ -43,6 +43,19 @@ index f656dc3..76165d1 100644
      esp_err_t ret;
      uint8_t prio_q_idx = 0;
      uint32_t capa = 0;
+diff --git a/esp/esp_driver/network_adapter/main/cmd.c b/esp/esp_driver/network_adapter/main/cmd.c
+index 9786b01..54fe39e 100644
+--- a/esp/esp_driver/network_adapter/main/cmd.c
++++ b/esp/esp_driver/network_adapter/main/cmd.c
+@@ -2342,7 +2342,7 @@ int process_set_power_save(uint8_t if_type, uint8_t *payload, uint16_t payload_l
+     if (ps == ESP_PS_OFF)
+         mode = WIFI_PS_NONE;
+     else if (ps == ESP_PS_MIN)
+-        mode = WIFI_PS_MIN_MODEM;
++        mode = WIFI_PS_NONE; /* Luckfox: modem sleep drops broadcast ARP, board unreachable until it sends first */
+     else
+         return send_command_resp(if_type, CMD_SET_POWER_SAVE,
+                                  CMD_RESPONSE_INVALID, NULL, 0);
 diff --git a/esp/esp_driver/network_adapter/main/spi_slave_api.c b/esp/esp_driver/network_adapter/main/spi_slave_api.c
 index 57295d9..f129346 100644
 --- a/esp/esp_driver/network_adapter/main/spi_slave_api.c
