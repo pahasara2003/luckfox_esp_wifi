@@ -1,3 +1,42 @@
+diff --git a/esp/esp_driver/network_adapter/main/app_main.c b/esp/esp_driver/network_adapter/main/app_main.c
+index f656dc3..21bac1d 100644
+--- a/esp/esp_driver/network_adapter/main/app_main.c
++++ b/esp/esp_driver/network_adapter/main/app_main.c
+@@ -19,6 +19,8 @@
+ #include <inttypes.h>
+ #include <string.h>
+ #include "esp_log.h"
++#include "driver/gpio.h"
++#include "esp_system.h"
+ #include "esp_heap_caps.h"
+ #include "sys/queue.h"
+ #include "soc/soc.h"
+@@ -1864,8 +1866,25 @@ static void set_gpio_cd_pin(void)
+ #endif
+ }
+ 
++/* Luckfox: SuperMini has no EN on the header, so the host reset line goes to GPIO1.
++ * Restart after a low pulse ends (restarting while still low would loop). */
++#define HOST_RESET_GPIO 1
++static void host_reset_task(void *arg)
++{
++	gpio_config_t c = { .pin_bit_mask = 1ULL << HOST_RESET_GPIO, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE };
++	gpio_config(&c);
++	bool seen_low = false;
++	for (;;) {
++		int v = gpio_get_level(HOST_RESET_GPIO);
++		if (!v) seen_low = true;
++		else if (seen_low) esp_restart();
++		vTaskDelay(pdMS_TO_TICKS(5));
++	}
++}
++
+ void app_main()
+ {
++	xTaskCreate(host_reset_task, "host_rst", 2048, NULL, 5, NULL);
+     esp_err_t ret;
+     uint8_t prio_q_idx = 0;
+     uint32_t capa = 0;
 diff --git a/esp/esp_driver/network_adapter/main/spi_slave_api.c b/esp/esp_driver/network_adapter/main/spi_slave_api.c
 index 57295d9..f129346 100644
 --- a/esp/esp_driver/network_adapter/main/spi_slave_api.c
