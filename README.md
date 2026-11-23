@@ -18,3 +18,6 @@
 - `bundle/S98esp32wifi` → `/etc/init.d/`: loads the modules, waits for `wlan0`, runs `wpa_supplicant -c /etc/wpa_supplicant.conf` and `udhcpc`. Log: `/tmp/esp32wifi.log`.
 - Reset: Luckfox pin 12 (GPIO1_D0) → ESP32-C3 GPIO1. Patched firmware restarts after a low pulse on GPIO1 (SuperMini has no EN on the header).
 - Wi-Fi network goes in `/etc/wpa_supplicant.conf` (chmod 600).
+
+## Slimmed boot
+`/oem/usr/ko/insmod_ko.sh` replaced by `bundle/insmod_ko.sh` (no-op; original kept on board as `insmod_ko.sh.stock`). Skips camera/ISP, NPU, video codec, audio, motor and stock-Wi-Fi (`rkwifi_server`, aic8800) modules. Result: 15.2 MB RAM available (was 11.5), load ~0.2 (was ~10), only `esp32_spi` + `cfg80211` loaded. `adbd` kept.
