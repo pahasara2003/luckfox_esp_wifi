@@ -1,5 +1,7 @@
 # Luckfox Pico Mini B + ESP32-C3 SuperMini SPI Wi-Fi (ESP-Hosted)
 
+**Build guide:** [ESP32C3 WiFi Driver for Luckfox Pico Mini](https://accidentalantenna.pages.dev/projects/luckfox-esp32-c3-spi-wifi/) on [AccidentalAntenna](https://accidentalantenna.pages.dev).
+
 - `dts/` device tree; copy to `luckfox-pico/sysdrv/source/kernel/arch/arm/boot/dts/` and build `rv1103g-luckfox-pico-mini-esp32.img`
   (needs SDK `sysdrv/tools/pc/uboot_tools` on PATH for `mkimage`).
 - `patches/` changes on top of espressif/esp-hosted-linux at the commit in `esp-hosted-linux.commit`
